@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 void main() => runApp(MycalculatorApp());
 
 class MycalculatorApp extends StatelessWidget{
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'my Calculator',
-      theme: new ThemeData(
-        primarySwatch: Colors.teal,
+      title: 'Calculator',
+      theme: ThemeData(
+        fontFamily: 'Questrial',
       ),
       home: MyCalc(),
     );
   }
+
 }
 
 class MyCalc extends StatefulWidget{
@@ -26,125 +29,357 @@ class MyCalc extends StatefulWidget{
 
 class Calculator extends State<MyCalc>{
 
-  //Controller for TextFormField
-
-  final Controller_numberA = TextEditingController();
-  final Controller_numberB = TextEditingController();
-  final My_form_key = GlobalKey<FormState>();
-
   String textToShow = "";
-
-  //function sum
-  void sum(){
-    if(My_form_key.currentState.validate()){
-      int numberA = int.parse(Controller_numberA.text);
-      int numberB = int.parse(Controller_numberB.text);
-      int result = numberA + numberB;
-
-      setState(() {
-        textToShow = "$numberA + $numberB = $result";
-      });
-    }
+  String result = "";
+  double newResult;
+  
+  _showAbout(){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9.0)
+              ),
+              title: new Text('About',textAlign: TextAlign.center,),
+              content: new Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  new Text(' App created with ❤ and flutter.', textAlign: TextAlign.justify,),
+                  new Divider(),
+                  new ListTile(
+                    contentPadding: new EdgeInsets.all(0.0),
+                    leading: new Icon(Icons.account_circle,color: Colors.blueAccent,),
+                    title: new Text('Rafael Alberto Martínez Méndez'),
+                    onTap: () { _goGithub();},
+                  ),
+                ],
+              )
+          );
+        });
   }
 
-  //function minus
-  void minus(){
-    if(My_form_key.currentState.validate()){
-      int numberA = int.parse(Controller_numberA.text);
-      int numberB = int.parse(Controller_numberB.text);
-      int result = numberA - numberB;
+  _goGithub(){
 
-      setState(() {
-        textToShow = "$numberA - $numberB = $result";
-      });
-    }
   }
 
-  //function minus
-  void times(){
-    if(My_form_key.currentState.validate()){
-      int numberA = int.parse(Controller_numberA.text);
-      int numberB = int.parse(Controller_numberB.text);
-      int result = numberA * numberB;
+  _copyResult(BuildContext context, String password){
 
-      setState(() {
-        textToShow = "$numberA * $numberB = $result";
-      });
+    if(result.isNotEmpty){
+
+      Clipboard.setData(new ClipboardData(text: password));
+
+      Fluttertoast.showToast(
+          msg: "Copied to Clipboard",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIos: 2
+      );
+
     }
+
   }
 
-  //function minus
-  void divide(){
-    if(My_form_key.currentState.validate()){
-      int numberA = int.parse(Controller_numberA.text);
-      int numberB = int.parse(Controller_numberB.text);
-      double result = numberA / numberB;
+  _signs(String sign){
 
-      setState(() {
-        textToShow = "$numberA / $numberB = $result";
-      });
+  //  if(textToShow.isEmpty || textToShow.contains("." ) || textToShow.contains("(" ) || textToShow.contains(")" )) return false;
+    textToShow += sign;
+
+  }
+
+  _numbers(String number){
+
+    List<String> signs = ["/","*","+","-"];
+    
+    if(number == "backspace"){
+      int length = textToShow.length;
+      textToShow = textToShow.substring(0,length-1);
+    }else {
+      textToShow += number;
     }
+
+    debugPrint(textToShow);
+    for(int i=0; i< signs.length;i++){
+
+      String sign = signs[i].toString();
+
+      if(textToShow.contains(sign)){
+
+        List<String> newText = textToShow.split(sign);
+        newText[1]=(textToShow.split(sign)[1]);
+
+        switch(sign){
+          case "/":
+            newResult = double.parse(newText[0]) / double.parse(newText[1]);
+            break;
+          case "*":
+            newResult = double.parse(newText[0]) * double.parse(newText[1]);
+            break;
+          case "+":
+            newResult = double.parse(newText[0]) + double.parse(newText[1]);
+            break;
+          case"-":
+            newResult = double.parse(newText[0]) - double.parse(newText[1]);
+            break;
+        }
+
+        result = newResult.toString();
+
+      }
+    }
+
+
   }
 
   @override
   Widget build(BuildContext context) {
 
+    final double width = MediaQuery.of(context).size.width - 36;
+    final double height = MediaQuery.of(context).size.height - 210;
+
     //create layout
     return new Scaffold(
-      backgroundColor: Colors.white,
-      body: Form(key: My_form_key, child: Column(mainAxisAlignment: MainAxisAlignment.center,children: <Widget>[
-        new Wrap(
-          spacing: 8.0,
-          runSpacing: 4.0,
-          direction: Axis.horizontal,
-          children: <Widget>[
-            TextFormField(
-                controller: Controller_numberA,
-                validator: (value){
-                  if(value.isEmpty) return "Please enter a number";
-                },
-                decoration: InputDecoration(labelText: 'Enter a number'),
-                keyboardType: TextInputType.number),
-            TextFormField(
-                controller: Controller_numberB,
-                validator: (value){
-                  if(value.isEmpty) return "Please enter a number";
-                },
-                decoration: InputDecoration(labelText: 'Enter a number'),
-                keyboardType: TextInputType.number),
-
-            //Create result textField
-            Text(textToShow,style: TextStyle(fontSize: 20.0),),
-          ],
+      appBar: new AppBar(
+        backgroundColor: Colors.white,
+        leading: null,
+        title: new GestureDetector(
+          child: Text("Calculator",style: TextStyle(color: Colors.black),),
+          onDoubleTap: (){_showAbout();},
         ),
+      ),
+      body: new Container(
+        child: new Padding(
+          padding: new EdgeInsets.only(top: 20,right: 18,left: 18),
+          child: new Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
 
-        //Create 4 buttons in a row
-        new Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8.0, // gap between adjacent chips
-          runSpacing: 4.0, // gap between lines
-          direction: Axis.horizontal, // main axis (rows or columns)
-          children: <Widget>[
-            new Wrap(
-              spacing: 8.0, // gap between adjacent chips
-              children: <Widget>[
-                RaisedButton(onPressed: sum,child: Text('+', style: TextStyle(color: Colors.white)),color: Colors.lightBlue,),
-                RaisedButton(onPressed: minus,child: Text('-', style:TextStyle(color: Colors.white)),color: Colors.red,),
-              ],
-            ),
-            new Wrap(
-              spacing: 8.0, // gap between adjacent chips
-              children: <Widget>[
-                RaisedButton(onPressed: times,child: Text('*', style: TextStyle(color: Colors.white),),color: Colors.lightGreenAccent,),
-                RaisedButton(onPressed: divide,child: Text('/', style: TextStyle(color: Colors.white),),color: Colors.amber,),
-              ],
-            )
-          ],
-        )
-      ],)),
+              new Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  new Text(textToShow,style: TextStyle(fontSize: 23,color: Colors.grey,),)
+                ],
+              ),
+              new Padding(padding: new EdgeInsets.only(top: 7)),
+              new Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  new  GestureDetector(
+                    onLongPress: (){ _copyResult(context,result);},
+                    child: new Text(result,style: TextStyle(fontSize: 55,color: Colors.black),)
+                  ),
+                ],
+              ),
+              new Padding(padding: new EdgeInsets.only(bottom: 20)),
+
+
+
+              new Row(
+                children: <Widget>[
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){ setState(() {textToShow = ""; result = "";});},child: new Center(child: Text("C",style: TextStyle(fontSize: 30,color: Colors.grey),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){ setState(() {textToShow += "(";});},child: new Center(child: Text("(",style: TextStyle(fontSize: 30,color: Colors.grey),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){ setState(() {textToShow += ")";});},child: new Center(child: Text(")",style: TextStyle(fontSize: 30,color: Colors.grey),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){ _numbers("backspace");},child: new Center(child: Icon(Icons.keyboard_backspace,color: Colors.grey,size: 30,)),),
+
+                  ),
+
+
+
+                ],
+              ),
+
+              new Row(
+                children: <Widget>[
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){ setState(() {_numbers("7");}); },child: new Center(child: Text("7",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("8");});},child: new Center(child: Text("8",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("9");});},child: new Center(child: Text("9",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_signs("/");});},child: new Center(child: new Text("÷",style: TextStyle(fontSize: 30,color: Color.fromRGBO(183,102,255,1)),)),),
+
+                  ),
+
+
+
+                ],
+              ),
+
+              new Row(
+                children: <Widget>[
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("4");});},child: new Center(child: Text("4",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("5");});},child: new Center(child: Text("5",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("6");});},child: new Center(child: Text("6",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_signs("*");});},child: new Center(child: new Text("x",style: TextStyle(fontSize: 30, color: Color.fromRGBO(254, 153, 0, 1)),)),),
+
+                  ),
+
+
+
+                ],
+              ),
+
+              new Row(
+                children: <Widget>[
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("1");});},child: new Center(child: Text("1",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("2");});},child: new Center(child: Text("2",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("3");});},child: new Center(child: Text("3",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_signs("-");});},child: new Center(child: new Text("-",style: TextStyle(fontSize: 30,color: Color.fromRGBO(255, 92, 93, 1)),)),),
+
+                  ),
+
+
+
+                ],
+              ),
+
+              new Row(
+                children: <Widget>[
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {textToShow += ".";});},child: new Center(child: Text(".",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_numbers("0");});},child: new Center(child: Text("0",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {textToShow = result; result ="";});},child: new Center(child: Text("=",style: TextStyle(fontSize: 30),),)),
+
+                  ),
+
+                  new ButtonTheme(
+                    minWidth: width/4,
+                    height: height/5,
+                    shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(17.0)),
+                    child: new FlatButton(onPressed: (){setState(() {_signs("+");});},child: new Center(child: new Text("+", style: TextStyle(fontSize: 30,color: Color.fromRGBO(20, 198, 148, 1)),) ),),
+
+                  ),
+
+
+
+                ],
+              )
+
+
+            ],
+          ),),
+
+      ),
     );
   }
-
-
 
 }
